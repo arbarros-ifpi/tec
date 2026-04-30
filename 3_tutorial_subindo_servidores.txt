@@ -9,9 +9,12 @@
 3 - Para entrar no servidor db
     $vagrant ssh db
 
-    vagrant@db$ sudo apt update 
+    Atualização de versão do Ubuntu.
+    $do-release-upgrade
 
-    vagrant@db$ sudo apt install mysql-server
+    vagrant@db$ sudo apt-get update 
+
+    vagrant@db$ sudo apt-get install mysql-server
 
     Como precisamos acessar o banco de dados do servidor web, é preciso configurar o MySQL para permitir conexões externas.
 
@@ -47,9 +50,7 @@
     Uma vez que a conta anônima foi removida, criaremos um usuário chamado loja, com uma senha “lojasecret”, com acesso exclusivo ao schema
 loja_schema:
 
-    vagrant@db$ mysql -uroot -p -e "GRANT ALL PRIVILEGES ON loja_schema.* \ 
-
-    > TO ’loja’@’%’ IDENTIFIED BY ’lojasecret’;"
+    vagrant@db$ mysql -uroot -p -e "GRANT ALL PRIVILEGES ON loja_schema.* TO ’loja’@’%’ IDENTIFIED BY ’lojasecret’;"
 
     Senha
 
@@ -62,13 +63,16 @@ loja_schema:
 4 - Para entrar no servidor web
     $ vagrant ssh web 
 
+    Atualização de versão do Ubuntu.
+    $do-release-upgrade
+
 5 - Para sair de qualquer servidor:
     $ exit
 
 6 - Entre no servidor web e faça o seguinte:
-    $ sudo apt update
+    $ sudo apt-get update
 
-    $ sudo apt install tomcat7 mysql-client
+    $ sudo apt-get install tomcat7 mysql-client
 
 7 - Verificar se o Tomcat7 foi instalado. 
     Abrir seu navegador e digitar a URL http://192.168.56.12:8080/

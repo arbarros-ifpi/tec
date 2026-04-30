@@ -10,8 +10,8 @@ Instação VirtualBox e Vagrant
 
 1 - Instalação da VirtualBox
     Atualize os repositórios e instale o VirtualBox (provedor de virtualização):
-        $ sudo apt update && sudo apt upgrade -y
-        $ sudo apt install virtualbox virtualbox-dkms libelf-dev -y
+        $ sudo apt-get update && sudo apt-get upgrade -y
+        $ sudo apt-get install virtualbox virtualbox-dkms libelf-dev -y
         
 2 - Instalação da Vagrant
     Adicione o repositório oficial do HashiCorp para garantir a versão mais recente:
@@ -25,7 +25,7 @@ Instação VirtualBox e Vagrant
         deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com jammy main
 
     Atualize os pacotes e instale o Vagrant:
-        sudo apt update && sudo apt install vagrant -y
+        sudo apt-get update && sudo apt-get install vagrant -y
   
     Verifique a instalação:
         virtualbox --version (vai abrir o virtual box). Antes de continuar, feche o virtual box.
