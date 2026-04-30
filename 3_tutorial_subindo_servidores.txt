@@ -7,14 +7,11 @@
 2 - O Vagrant tomará conta de subir e configurar as máquinas virtuais para você.
 
 3 - Para entrar no servidor db
-    $vagrant ssh db
+    $vagrant@db
 
-    Atualização de versão do Ubuntu.
-    $do-release-upgrade
+    vagrant@db$ sudo apt update 
 
-    vagrant@db$ sudo apt-get update 
-
-    vagrant@db$ sudo apt-get install mysql-server
+    vagrant@db$ sudo apt install mysql-server
 
     Como precisamos acessar o banco de dados do servidor web, é preciso configurar o MySQL para permitir conexões externas.
 
@@ -39,18 +36,21 @@
 
     Agora verificar que o banco de dados foi criado com sucesso, você pode executar o seguinte comando que lista todos os banco de dados existentes:
 
-    vagrant@db$ mysql -u root -p -e "SHOW DATABASES"
+    vagrant@db$ mysql -u root -p -e "SHOW DATABASES";
 
     Não é recomendável executar queries no MySQL como usuário root. Vamos criar uma conta para acesso e eliminar a conta anônima do mysql
 
-    vagrant@db$ mysql -uroot -p -e "DELETE FROM mysql.user WHERE user=’’; FLUSH PRIVILEGES"
+    vagrant@db$ mysql -uroot -p -e "DELETE FROM mysql.user WHERE user=’’; 
+    > FLUSH PRIVILEGES";
 
     Senha
 
     Uma vez que a conta anônima foi removida, criaremos um usuário chamado loja, com uma senha “lojasecret”, com acesso exclusivo ao schema
 loja_schema:
 
-    vagrant@db$ mysql -uroot -p -e "GRANT ALL PRIVILEGES ON loja_schema.* TO ’loja’@’%’ IDENTIFIED BY ’lojasecret’;"
+    vagrant@db$ mysql -uroot -p -e "GRANT ALL PRIVILEGES ON loja_schema.* \ 
+
+    > TO ’loja’@’%’ IDENTIFIED BY ’lojasecret’;"
 
     Senha
 
@@ -61,18 +61,15 @@ loja_schema:
     Para deslogar da máquina virtual db, você pode digitar o comando logout ou pressionar Ctrl+D.
 
 4 - Para entrar no servidor web
-    $ vagrant ssh web 
-
-    Atualização de versão do Ubuntu.
-    $do-release-upgrade
+    $ vagrant@web 
 
 5 - Para sair de qualquer servidor:
     $ exit
 
 6 - Entre no servidor web e faça o seguinte:
-    $ sudo apt-get update
+    $ sudo apt update
 
-    $ sudo apt-get install tomcat7 mysql-client
+    $ sudo apt install tomcat7 mysql-client
 
 7 - Verificar se o Tomcat7 foi instalado. 
     Abrir seu navegador e digitar a URL http://192.168.56.12:8080/
