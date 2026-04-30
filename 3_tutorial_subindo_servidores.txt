@@ -1,0 +1,58 @@
+1 - Para subir os servidores, basta executar o comando 
+    
+    $ vagrant up 
+    
+    no mesmo diretório onde o arquivo Vagrantfile foi criado 
+
+2 - O Vagrant tomará conta de subir e configurar as máquinas virtuais para você.
+
+3 - Para entrar no servidor db
+    $ vagrant@db 
+
+4 - Para entrar no servidor web
+    $ vagrant@web 
+
+5 - Para sair de qualquer servidor:
+    $ exit
+
+6 - Entre no servidor web e faça o seguinte:
+    $ sudo apt update
+
+    $ sudo apt install tomcat7 mysql-client
+
+7 - Verificar se o Tomcat7 foi instalado. 
+    Abrir seu navegador e digitar a URL http://192.168.56.12:8080/
+
+    Se tudo estiver ok, você deve ver uma página com uma mensagem "It works!”.
+
+8 - No servidor web, vamos configurar um conector SSL para que o Tomcat consiga rodar tanto em HTTP quanto HTTPS.
+    Usaremos a ferramenta keytool, que é parte da distribuição padrão do Java, para gerar um certificado para o nosso servidor web.
+
+    vagrant@web$ cd /var/lib/tomcat7/conf
+
+    vagrant@web$ sudo keytool -genkey -alias tomcat -keyalg RSA \> -keystore .keystore
+
+    Senha “secret” para facilitar
+
+9 - Uma vez que o certificado foi criado e armazenado, precisamos configurar o servidor do Tomcat para habilitar o conector SSL
+
+    vagrant@web$ sudo nano /var/lib/tomcat7/conf/server.xml
+
+10 - 
+
+
+11 - A última alteração que precisamos fazer é aumentar a quantidade de memória que o Tomcat pode usar.
+    Entrar no arquivo abaixo e:
+
+    vagrant@web$ sudo nano /etc/default/tomcat7
+
+    Alterar a linha
+
+    JAVA_OPTS="-Djava.awt.headless=true -Xmx512M -XX:+UseConcMarkSweepGC"
+
+12 - Por fim, para que todas as configurações sejam aplicadas, precisamos reiniciar o servidor Tomcat:
+
+    vagrant@web$ sudo service tomcat7 restart
+
+13 - Para verificar que tudo está funcionando, você pode voltar no navegador e tentar acessar a página padrão através do conector SSL, acessando a
+URL https://192.168.33.12:8443/ .
