@@ -7,7 +7,7 @@
 2 - O Vagrant tomará conta de subir e configurar as máquinas virtuais para você.
 
 3 - Para entrar no servidor db
-    $vagrant@db
+    $vagrant ssh db
 
     vagrant@db$ sudo apt update 
 
@@ -60,7 +60,7 @@ loja_schema:
     Para deslogar da máquina virtual db, você pode digitar o comando logout ou pressionar Ctrl+D.
 
 4 - Para entrar no servidor web
-    $ vagrant@web 
+    $ vagrant ssh web 
 
 5 - Para sair de qualquer servidor:
     $ exit
