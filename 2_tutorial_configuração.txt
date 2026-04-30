@@ -22,45 +22,8 @@ web_config.vm.network :private_network, :ip => "192.168.56.12"
 end
 end
 
-
-
-===================================================================================================================
-Código Vinícius
-===================================================================================================================
-
-VAGRANTFILE_API_VERSION = "2"
-
-Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "hashicorp/precise32"
-  config.vm.define :db do |db_config|
-    db_config.vm.network :private_network, ip: "192.168.56.10"
-    db_config.vm.provision "shell", inline: <<-SHELL
-      export DEBIAN_FRONTEND=noninteractive
-      sudo sed -i 's|us.archive.ubuntu.com/ubuntu|old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
-      sudo sed -i 's|security.ubuntu.com/ubuntu|old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
-      sudo apt-get update -y
-      echo "mysql-server mysql-server/root_password password 12345" | sudo debconf-set-selections
-      echo "mysql-server mysql-server/root_password_again password 12345" | sudo debconf-set-selections
-      sudo apt-get install -y mysql-server-5.5
-      sudo sed -i 's|bind-address.*= 127.0.0.1|bind-address = 0.0.0.0|g' /etc/mysql/my.cnf
-      sudo service mysql restart
-
-      DB_NAME="loja_schema"
-      DB_USER="vinicius"
-      DB_PASS="12345"
-      DB_ROOT_PASS="12345"
-
-      mysql -u root -p"${DB_ROOT_PASS}" -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME};"
-      mysql -u root -p"${DB_ROOT_PASS}" -e "CREATE USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';"
-      mysql -u root -p"${DB_ROOT_PASS}" -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'%';"
-      mysql -u root -p"${DB_ROOT_PASS}" -e "FLUSH PRIVILEGES;"
-    SHELL
-  end
-end
-
     Ctrl+O para salvar
     Ctrl+X para sair
-===================================================================================================================
 
 4 - Vá para o arquivo tutorial_subindo_servidores.txt
 
