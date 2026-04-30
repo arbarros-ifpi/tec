@@ -1,13 +1,63 @@
 1 - Para subir os servidores, basta executar o comando 
     
-    $ vagrant up 
+    $vagrant up 
     
     no mesmo diretório onde o arquivo Vagrantfile foi criado 
 
 2 - O Vagrant tomará conta de subir e configurar as máquinas virtuais para você.
 
 3 - Para entrar no servidor db
-    $ vagrant@db 
+    $vagrant@db
+
+    vagrant@db$ sudo apt update 
+
+    vagrant@db$ sudo apt install mysql-server
+
+    Como precisamos acessar o banco de dados do servidor web, é preciso configurar o MySQL para permitir conexões externas.
+
+    vagrant@db$ sudo nano /etc/mysql/conf.d/allow_external.cnf
+
+    Basta digitar o conteúdo abaixo
+
+    [mysqld] 
+        bind-address = 0.0.0.0
+    Ctrl+O para salvar
+    Ctrl+X para sair
+
+    Reiniciar o servidor mysql
+
+    vagrant@db$ sudo service mysql restart
+
+    Precisamos então criar um banco de dados para a loja virtual, que chamaremos de loja_schema, através do comando:
+
+    vagrant@db$ mysqladmin -u root -p create loja_schema
+
+    Senha será "secret"
+
+    Agora verificar que o banco de dados foi criado com sucesso, você pode executar o seguinte comando que lista todos os banco de dados existentes:
+
+    vagrant@db$ mysql -u root -p -e "SHOW DATABASES"
+
+    Não é recomendável executar queries no MySQL como usuário root. Vamos criar uma conta para acesso e eliminar a conta anônima do mysql
+
+    vagrant@db$ mysql -uroot -p -e "DELETE FROM mysql.user WHERE user=’’; FLUSH PRIVILEGES"
+
+    Senha
+
+    Uma vez que a conta anônima foi removida, criaremos um usuário chamado loja, com uma senha “lojasecret”, com acesso exclusivo ao schema
+loja_schema:
+
+    vagrant@db$ mysql -uroot -p -e "GRANT ALL PRIVILEGES ON loja_schema.* \ 
+
+    > TO ’loja’@’%’ IDENTIFIED BY ’lojasecret’;"
+
+    Senha
+
+    Agora vamos testar para ver se está tudo ok
+
+    vagrant@db$ mysql -u loja -p loja_schema -e "select database(), user()"
+
+    Para deslogar da máquina virtual db, você pode digitar o comando logout ou pressionar Ctrl+D.
 
 4 - Para entrar no servidor web
     $ vagrant@web 
@@ -38,8 +88,24 @@
 
     vagrant@web$ sudo nano /var/lib/tomcat7/conf/server.xml
 
-10 - 
+10 - Dentro deste arquivo, a definição do conector SSL para a porta 8443 já está predefinida, porém comentada. Você precisa descomentar a definição
+    deste conector e adicionar mais dois atributos que representam o arquivo do keystore e a senha de proteção.
 
+
+    <?xml version=’1.0’ encoding=’utf-8’?>
+    <Server port="8005" shutdown="SHUTDOWN">
+    ...
+    <Service name="Catalina">
+    ...
+        <!-- Define a SSL HTTP/1.1 Connector on port 8443
+            This connector uses the JSSE configuration, when using
+            APR, the connector should be using the OpenSSL style
+            configuration described in the APR documentation -->
+        <Connector port="8443" protocol="HTTP/1.1" SSLEnabled="true" maxThreads="150" scheme="https" secure="true" keystoreFile="conf/.keystore"
+            keystorePass="secret" clientAuth="false" sslProtocol="SSLv3" />
+    ...
+    </Service>
+    </Server>
 
 11 - A última alteração que precisamos fazer é aumentar a quantidade de memória que o Tomcat pode usar.
     Entrar no arquivo abaixo e:
