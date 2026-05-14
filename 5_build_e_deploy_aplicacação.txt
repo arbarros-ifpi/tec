@@ -9,10 +9,110 @@
 
     vagrant@web$ sudo git clone https://github.com/dtsato/loja-virtual-devops.git
 
-3 - Entrar na pasta criada (loja-virtual-devops) e "buildar" tudo:
+
+3 - Construindo a aplicação ("Buildando")
+
+    Entrar na pasta criada (loja-virtual-devops) e "buildar" tudo:
 
     vagrant@web$ cd loja-virtual-devops
     
     vagrant@web$ export MAVEN_OPTS=-Xmx256m
     
     vagrant@web$ mvn install
+
+    A primeira execução do Maven vai demorar de 20 a 25 minutos
+
+        • Sub-projetos: o projeto está organizado em 4 módulos: core possui
+        as configurações principais, extensões e customizações da loja virtual;
+        site é a aplicação web da loja virtual; admin é uma aplicação web
+        restrita para administração e gerenciamento da loja virtual; por fim,
+        combined é um módulo que agrega as duas aplicações web e o core
+        em um único artefato. Cada módulo atua como um subprojeto que o
+        Maven precisa realizar o build separadamente.
+
+        • Resolução de dependências: o Maven irá resolver todas as dependências do projeto 
+        e baixar as bibliotecas e frameworks necessários para compilar e rodar cada módulo da 
+        loja virtual.
+        
+        • Compilação: o código Java e GWT precisa ser compilado para execu-
+        ção. Isso toma um bom tempo na primeira vez. O compilador Java é
+        inteligente o suficiente para recompilar apenas o necessário em builds
+        subsequentes.
+        
+        • Testes automatizados: em módulos que definem testes automatizados,
+        o Maven irá executá-los e gerar relatórios de quais testes passaram e
+        quais falharam.
+        
+        • Empacotamento de artefatos: por fim, o módulo core será empaco-
+        tado como um arquivo .jar enquanto os módulos web ( site, admin
+        e combined) serão empacotados como um arquivo .war. Ambos os
+        arquivos jar e war são equivalentes a arquivos zip que você baixa
+        regularmente da internet, no entanto a estrutura interna dos pacotes é
+        bem definida e padronizada pelo Java: o jar contém classes compi-
+        ladas e serve como biblioteca enquanto o war contém classes, biblio-
+        tecas, arquivos estáticos e de configuração necessários para rodar uma
+        aplicação web em um container Java como o Tomcat.
+
+4 - Ao término do build, o artefato que nos interessa para deploy é o arquivo 
+devopsnapratica.war do módulo combined,que se encontra no diretório combined/target.
+
+5 - a última configuração necessária no Tomcat é a definição das fontes de dado, ou DataSource, que a aplicação
+irá acessar para conectar com o banco de dados. Isso ajuda no build automático possibilitando a alteração sem necessidade de um
+novo build.
+
+    A loja virtual precisa de três fontes de dados no JNDI chamadas
+    jdbc/web, jdbc/secure e jdbc/storage. No nosso caso, usare-
+    mos o mesmo banco de dados para os três recursos, definidos no arquivo
+    context.xml:
+
+    vagrant@web$ sudo nano /var/lib/tomcat9/conf/context.xml
+
+    Propriedade name
+
+    <?xml version=’1.0’ encoding=’utf-8’?>
+    <Context>
+        <WatchedResource>WEB-INF/web.xml</WatchedResource>
+        
+        <Resource name="jdbc/web" auth="Container"
+            type="javax.sql.DataSource" maxActive="100" maxIdle="30"
+            maxWait="10000" username="loja" password="lojasecret"
+            driverClassName="com.mysql.jdbc.Driver"
+            url="jdbc:mysql://192.168.33.10:3306/loja_schema"/>
+            
+        <Resource name="jdbc/secure" auth="Container"
+            type="javax.sql.DataSource" maxActive="100" maxIdle="30"
+            maxWait="10000" username="loja" password="lojasecret"
+            driverClassName="com.mysql.jdbc.Driver"
+            url="jdbc:mysql://192.168.33.10:3306/loja_schema"/>
+            
+        <Resource name="jdbc/storage" auth="Container"
+            type="javax.sql.DataSource" maxActive="100" maxIdle="30"
+            maxWait="10000" username="loja" password="lojasecret"
+            driverClassName="com.mysql.jdbc.Driver"
+            url="jdbc:mysql://192.168.33.10:3306/loja_schema"/>
+    </Context>
+
+6 - Para fazer o deploy da loja virtual em si, simplesmente precisamos copiar o artefato war 
+para o lugar certo e o Tomcat fará o necessário para colocar a loja virtual no ar:
+    
+    vagrant@web$ cd ~/loja-virtual-devops
+
+    vagrant@web$ sudo cp combined/target/devopsnapratica.war \ /var/lib/tomcat7/webapps
+
+    Você pode acompanhar o deploy em tempo real usando o comando
+
+    vagrant@web$ tail -f /var/lib/tomcat7/logs/catalina.out
+
+    O deploy termina assim que você perceber que as atividades no log pararam. 
+    Para terminar o comando tail você pode usar Ctrl+C.
+
+    Para testar que tudo está funcionando: 
+        abra uma nova janela no navegador e digite a URL 
+        http://192.168.33.12:8080/devopsnapratica/ . Parabéns, a loja virtual está em produção!
+
+    Você também pode acessar a página de administração que se encontra na URL 
+    http://192.168.33.12:8080/devopsnapratica/admin/ (a barra no final da URL é importante). 
+    
+    Entrando com o usuário “admin” e senha “admin” você pode navegar pelas páginas de 
+    administração e gerenciar o catálogo de produtos, categorias, o conteúdo das páginas da 
+    loja virtual, gerenciar pedidos, assim como usuários e permissões.
