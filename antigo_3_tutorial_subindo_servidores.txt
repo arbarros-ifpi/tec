@@ -1,0 +1,190 @@
+1 - Para subir os servidores, basta executar o comando 
+    
+    $ vagrant up 
+    
+    no mesmo diretório onde o arquivo Vagrantfile foi criado 
+
+2 - O Vagrant tomará conta de subir e configurar as máquinas virtuais para você.
+
+3 - Para entrar no servidor db
+    $ vagrant ssh db
+
+    vagrant@db$ sudo apt update 
+
+    vagrant@db$ sudo apt install mysql-server
+
+    Como precisamos acessar o banco de dados do servidor web, é preciso configurar o MySQL para permitir conexões externas.
+
+    vagrant@db$ sudo nano /etc/mysql/conf.d/allow_external.cnf
+
+    Basta digitar o conteúdo abaixo
+
+    [mysqld] 
+        bind-address = 0.0.0.0
+    Ctrl+O para salvar
+    Ctrl+X para sair
+
+    Reiniciar o servidor mysql
+
+    vagrant@db$ sudo service mysql restart
+
+    OBSERVAÇÃO: Se durante a instalação não foi solicitada a criação de uma senha de root
+    do mysql, voce precisará seguir os seguintes passos para configuração da senha de root do mysql:
+        1. Parar o MySQL
+        $ sudo systemctl stop mysql
+        
+        2. Garantir diretório do socket
+        $ sudo mkdir -p /var/run/mysqld
+        $ sudo chown mysql:mysql /var/run/mysqld
+
+        3. Iniciar em modo seguro (sem validação de senha)
+        $ sudo mysqld_safe --skip-grant-tables &
+        Aguarde alguns segundos
+
+        4. Entre no mysql em modo seguro
+        $ mysql -u root
+
+        5. Altere a senha do usuário root
+        $ ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'secret';
+
+        6. Comando para atualizar  
+        $ FLUSH PRIVILEGES
+
+        7. Sair
+        # exit
+
+        8. Parar o modo seguro
+        $ sudo killall mysqld
+
+        9. Subir o mysql normalmente
+        $ sudo systemctl start mysql
+
+        10. Testar acesso
+        $ mysql -u root -p
+
+        Senha: secret
+
+
+    Precisamos então criar um banco de dados para a loja virtual, que chamaremos de loja_schema, através do comando:
+
+    vagrant@db$ mysqladmin -u root -p create loja_schema
+
+    Senha será "secret"
+
+    Agora verificar que o banco de dados foi criado com sucesso, você pode executar o seguinte comando que lista todos os banco de dados existentes:
+
+    vagrant@db$ mysql -u root -p -e "SHOW DATABASES";
+
+    Não é recomendável executar queries no MySQL como usuário root. Vamos criar uma conta para acesso e eliminar a conta anônima do mysql
+
+    vagrant@db$ mysql -uroot -p -e "DELETE FROM mysql.user WHERE user=’’; 
+    > FLUSH PRIVILEGES";
+
+    Senha
+
+    Uma vez que a conta anônima foi removida, criaremos um usuário chamado loja, com uma senha “lojasecret”, com acesso exclusivo ao schema
+loja_schema:
+
+    vagrant@db$ mysql -uroot -p -e "GRANT ALL PRIVILEGES ON loja_schema.* TO 'loja'@'%' IDENTIFIED BY 'lojasecret';"
+
+    Senha
+
+    Agora vamos testar para ver se está tudo ok
+
+    vagrant@db$ mysql -u loja -p loja_schema -e "select database(), user()"
+
+    Para deslogar da máquina virtual db, você pode digitar o comando logout ou pressionar Ctrl+D.
+
+4 - Para entrar no servidor web
+    $ vagrant ssh web 
+
+5 - Para sair de qualquer servidor:
+    $ exit
+
+6 - Entre no servidor web e faça o seguinte:
+    $ sudo apt update
+
+    $ sudo apt install tomcat9 mysql-client
+
+7 - Verificar se o Tomcat9 foi instalado. 
+    Abrir seu navegador e digitar a URL http://192.168.56.12:8080/
+
+    Se tudo estiver ok, você deve ver uma página com uma mensagem "It works!”.
+
+8 - No servidor web, vamos configurar um conector SSL para que o Tomcat consiga rodar 
+    tanto em HTTP quanto HTTPS.
+
+    Usaremos a ferramenta keytool, que é parte da distribuição padrão do Java, para gerar 
+    um certificado para o nosso servidor web.
+
+    vagrant@web$ cd /var/lib/tomcat9/conf
+
+    vagrant@web$ sudo keytool -genkey -alias tomcat -keyalg RSA -keystore .keystore
+
+    Senha “secret” para facilitar
+
+9 - Uma vez que o certificado foi criado e armazenado, precisamos configurar o servidor do Tomcat para habilitar o conector SSL
+
+    vagrant@web$ sudo nano /var/lib/tomcat9/conf/server.xml
+
+10 - Dentro deste arquivo, a definição do conector SSL para a porta 8443 já está predefinida, 
+porém comentada. Você precisa descomentar a definição deste conector e adicionar mais 
+dois atributos que representam o arquivo do keystore e a senha de proteção.
+
+
+    <?xml version=’1.0’ encoding=’utf-8’?>
+    <Server port="8005" shutdown="SHUTDOWN">
+    ...
+    <Service name="Catalina">
+    ...
+        <!-- Define a SSL HTTP/1.1 Connector on port 8443
+            This connector uses the JSSE configuration, when using
+            APR, the connector should be using the OpenSSL style
+            configuration described in the APR documentation -->
+
+        <!--
+ 70     <Connector port="8080" protocol="HTTP/1.1"
+ 71                connectionTimeout="20000"
+ 72                redirectPort="8443" />
+        -->
+        
+        <Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol"
+           maxThreads="150" SSLEnabled="true" scheme="https" secure="true"
+           clientAuth="false" sslProtocol="TLS"
+           keystoreFile="/var/lib/tomcat9/conf/.keystore"
+           keystorePass="secret" />
+
+    ...
+    </Service>
+    </Server>
+
+    Ctrl+O para salvar
+    Ctrl+X para sair
+
+    Dê a peermissão para o seguinte arquivo
+    $ sudo chown tomcat:tomcat /var/lib/tomcat9/conf/.keystore
+
+    Recarregue 
+    $ sudo systemctl daemon-reload
+
+    Reinicie o tomcat
+    $ sudo systemctl restart tomcat9
+
+11 - Para verificar que tudo está funcionando, você pode voltar no navegador e tentar acessar a página padrão através do conector SSL, acessando a
+URL https://192.168.56.12:8443/ .
+
+12 - A última alteração que precisamos fazer é aumentar a quantidade de memória que o Tomcat pode usar.
+    Entrar no arquivo abaixo e:
+
+    vagrant@web$ sudo nano /etc/default/tomcat9
+
+    Alterar a linha
+
+    JAVA_OPTS="-Djava.awt.headless=true -Xmx512M -XX:+UseConcMarkSweepGC"
+
+13 - Por fim, para que todas as configurações sejam aplicadas, precisamos reiniciar o servidor Tomcat:
+
+    vagrant@web$ sudo service tomcat9 restart
+
+14 - Para verificar que tudo está funcionando, você pode voltar no navegador e tentar acessar a página padrão através do conector SSL, acessando a
+URL https://192.168.56.12:8443/ .

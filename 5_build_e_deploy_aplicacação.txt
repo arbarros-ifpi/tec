@@ -3,11 +3,11 @@
     o Maven (http://maven.apache.org/) para executar o build em si e 
     o JDK (Java Development Kit) para conseguirmos compilar o código Java
 
-    vagrant@web$ sudo apt-get install git maven2 openjdk-6-jdk
+    vagrant@web$ sudo apt-get install git maven openjdk-11-jdk -y
 
 2 - Clonar a loja virtual no nosso servidor
 
-    vagrant@web$ git clone https://github.com/dtsato/loja-virtual-devops.git
+    vagrant@web$ sudo git clone https://github.com/dtsato/loja-virtual-devops.git
 
 3 - Entrar na pasta criada (loja-virtual-devops) e "buildar" tudo:
 

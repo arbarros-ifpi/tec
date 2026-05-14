@@ -12,14 +12,20 @@ Configuração Vagrant
 3 - Copie e cole o seguinte conteúdo no Vagrantfile 
 
 VAGRANTFILE_API_VERSION = "2"
-  Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "hashicorp/bionic64"
+
+  # Configuração da máquina de Banco de Dados
   config.vm.define :db do |db_config|
-  db_config.vm.network :private_network, :ip => "192.168.56.10"
-end
+    db_config.vm.hostname = "db" 
+    db_config.vm.network :private_network, :ip => "192.168.56.10"
+  end
+
+  # Configuração da máquina Web
   config.vm.define :web do |web_config|
-web_config.vm.network :private_network, :ip => "192.168.56.12"
-end
+    web_config.vm.hostname = "web" 
+    web_config.vm.network :private_network, :ip => "192.168.56.12"
+  end
 end
 
     Ctrl+O para salvar

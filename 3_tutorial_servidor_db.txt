@@ -1,0 +1,57 @@
+Instalação e Configuração do MySQL Server (Acesso Externo)
+
+Passo 1: Instalação do Servidor MySQLO Ubuntu 18.04 instalará a versão 5.7. 
+Ela não solicita senha na tela de instalação por segurança, pois adota autenticação direta 
+via sistema operacional.
+    $ sudo apt update
+    $ sudo apt install mysql-server -y
+
+Passo 2: Liberação de Conexões Externas (Bind-Address).
+Por padrão, o MySQL rejeita qualquer conexão de fora da própria máquina. 
+Vamos alterar isso no arquivo principal de configuração.
+    $ sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
+Pressione Ctrl + W para buscar pelo termo bind-address.
+Modifique o valor de 127.0.0.1 para 0.0.0.0 (isto diz ao MySQL para escutar todas as placas 
+de rede).
+Salve e saia do arquivo (Ctrl + O, Enter, Ctrl + X).
+Reinicie o serviço para aplicar a mudança:
+    $ sudo systemctl restart mysql
+
+Passo 3: Configuração Segura da Senha de RootComo a instalação não pediu senha, entre no 
+prompt administrativo utilizando o privilégio do sistema (sudo):
+    $ sudo mysql
+Dentro do terminal do MySQL (mysql>), execute os comandos abaixo exatamente como estão para 
+definir a senha do root como secret:
+    ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'secret';
+    FLUSH PRIVILEGES;
+    EXIT;
+
+Passo 4: Criação do Banco de Dados (loja_schema)
+Agora que o usuário root tem uma credencial, use o utilitário do sistema para criar a 
+base de dados do projeto:bashmysqladmin -u root -p create loja_schema
+    Senha: secret
+Para validar se o banco foi criado, liste as bases existentes:
+    $ mysql -u root -p -e "SHOW DATABASES;"
+Passo 5: Remoção de Usuários Anônimos
+Garante a segurança do ambiente removendo contas vazias que vêm por padrão e que poderiam 
+gerar brechas no servidor:
+    $ mysql -u root -p -e "DELETE FROM mysql.user WHERE user=''; FLUSH PRIVILEGES;"
+
+Passo 6: Criação do Usuário de Aplicação (loja)
+Crie o usuário que o seu servidor Tomcat usará. 
+O parâmetro '%' garante que ele poderá se conectar vindo de qualquer máquina externa 
+(como a VM web):
+    $ mysql -u root -p -e "CREATE USER 'loja'@'%' IDENTIFIED BY 'lojasecret'; GRANT ALL PRIVILEGES ON loja_schema.* TO 'loja'@'%'; FLUSH PRIVILEGES;"
+
+Passo 7: Liberação do Firewall da VM
+O firewall do Ubuntu bloqueia conexões vindas de fora. 
+Libere a porta padrão do MySQL (3306) para que a máquina web consiga alcançar o banco:
+    $ sudo ufw allow 3306/tcp
+
+Passo 8: Teste de Validação Local
+Verifique se o usuário criado consegue se conectar e enxergar o banco de dados corretamente:
+    $ mysql -u loja -p lojasecret loja_schema -e "SELECT database(), user();"
+O terminal deve exibir uma tabela confirmando o banco loja_schema e o usuário loja.
+Para sair da máquina virtual db e voltar para o seu computador, digite logout ou pressione 
+
+Ctrl + D.

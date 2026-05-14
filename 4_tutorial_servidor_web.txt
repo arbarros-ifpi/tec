@@ -1,0 +1,72 @@
+Instalação e Configuração do Servidor Web (Tomcat 9 com SSL)
+
+Passo 1: Acesso e Instalação dos PacotesConecte na máquina web. 
+Além do cliente MySQL, precisamos instalar pacotes adicionais do Tomcat que trazem a 
+página "It works!" (omitida por padrão no Ubuntu por segurança).
+    $ vagrant ssh web
+    $ sudo apt update
+    $ sudo apt install tomcat9 tomcat9-admin tomcat9-docs tomcat9-examples mysql-client -y
+
+Passo 2: Liberação do Firewall (Porta HTTP)
+Libere o tráfego externo para a porta padrão do 
+Tomcat para conseguir acessá-lo do seu computador:
+    $ sudo ufw allow 8080/tcp
+Validação: Abra o navegador na sua máquina física e acesse http://192.168.56.12:8080/. 
+Você deverá ver a página com a mensagem "It works!".
+
+Passo 3: Geração do Certificado SSL/TLS
+Acesse o diretório de configurações do Tomcat e gere o arquivo de chaves .keystore usando 
+a ferramenta nativa do Java:
+    $ cd /var/lib/tomcat9/conf
+    $ sudo keytool -genkey -alias tomcat -keyalg RSA -keystore /var/lib/tomcat9/conf/.keystore -storepass secret -keypass secret -dname "CN=localhost, OU=Dev, O=Empresa, L=Cidade, S=Estado, C=BR"
+
+Passo 4: Configuração do Conector SSL no server.xml
+Abra o arquivo principal de configuração do Tomcat.(Dica: Se seguiu os passos anteriores, as 
+linhas já estarão numeradas na lateral esquerda).
+    $ sudo nano /var/lib/tomcat9/conf/server.xml
+
+Use Ctrl + W para buscar por 8443. Você encontrará o bloco de conector padrão comentado 
+(envolvido por <!-- e -->).
+Vá até a linha abaixo do fechamento do comentário (-->).
+Cole exatamente o conector moderno abaixo, garantindo que ele não fique duplicado e fique 
+fora de qualquer comentário:xml
+
+<Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol"
+           maxThreads="150" SSLEnabled="true" scheme="https" secure="true"
+           clientAuth="false" sslProtocol="TLS"
+           keystoreFile="/var/lib/tomcat9/conf/.keystore"
+           keystorePass="secret" />
+
+Salve e saia do arquivo (Ctrl + O, Enter, Ctrl + X).
+
+Passo 5: Permissões, Firewall e Reinício do Serviço
+O Tomcat roda sob um usuário isolado e precisa de permissão explícita para ler a chave criada 
+pelo root. Também precisamos liberar a porta HTTPS no firewall.
+    $ sudo chown tomcat:tomcat /var/lib/tomcat9/conf/.keystore
+    $ sudo ufw allow 8443/tcp
+    $ sudo systemctl daemon-reload
+    $ sudo systemctl restart tomcat9
+
+Validação: Abra o navegador na sua máquina física e acesse https://192.168.56.12:8443/. 
+O navegador exibirá um aviso de segurança (certificado autoassinado). 
+Clique em Avançado e depois em Continuar para 192.168.56.12 (não seguro). 
+A página "It works!" deve carregar sob HTTPS.
+
+Passo 6: Ajuste de Memória RAM do TomcatPara suportar deploys maiores, vamos aumentar o 
+limite de memória que a Máquina Virtual Java (JVM) do Tomcat pode utilizar.
+    $ sudo nano /etc/default/tomcat9
+Localize a linha que define a variável JAVA_OPTS.
+Substitua o conteúdo ou adicione a linha exatamente assim (configurando o limite máximo para 
+512MB):
+    textJAVA_OPTS="-Djava.awt.headless=true -Xmx512M -XX:+UseConcMarkSweepGC"
+Salve e saia do arquivo (Ctrl + O, Enter, Ctrl + X).
+
+Passo 7: Reinício Final e Conclusão
+
+Reinicie o serviço para que o Tomcat aplique as novas diretrizes de memória do sistema 
+operacional:bashsudo systemctl restart tomcat9
+
+Validação Final: Atualize a página do seu navegador em https://192.168.56.12:8443/ para 
+certificar-se de que tudo continua respondendo perfeitamente com o novo limite de memória 
+configurado.Para sair do servidor web e retornar ao seu terminal local, digite exit ou 
+pressione Ctrl + D.
