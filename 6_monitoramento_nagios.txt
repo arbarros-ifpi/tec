@@ -1,0 +1,71 @@
+Com base no Capítulo 3: Monitoramento do livro, aqui está o passo a passo prático para configurar 
+o sistema de monitoramento da loja virtual utilizando o Nagios.
+
+Passo 1. Provisionamento do Servidor de Monitoramento
+O monitoramento deve rodar em um servidor externo para garantir visibilidade mesmo se os outros 
+caírem
+
+Adicionar a VM no Vagrantfile: Insira a definição da máquina monitor com o IP 192.168.56.14:
+    Subir o servidor: No terminal, execute vagrant up monitor;
+    Acessar a máquina: vagrant ssh monitor;
+
+Passo 2. Instalação do Nagios
+    Para garantir a versão mais recente e configurar o acesso web:
+    Configurar repositórios: Execute os comandos echo e apt-get update conforme descrito na fonte 
+    para priorizar o release "raring" para pacotes do Nagios
+
+    Instalar o pacote: 
+    $ sudo apt-get install nagios3
+
+    Configurar Postfix: Durante a instalação, selecione "Internet Site" e defina o nome como 
+    monitor.lojavirtualdevops.com.br
+
+    Definir senha web: Escolha uma senha (ex: secret) para o usuário nagiosadmin
+
+    Validar: Acesse http://192.168.56.14/nagios3 no seu navegador
+
+Passo 3. Monitoramento de Servidores Remotos (DB e Web)
+    Você precisa declarar os outros servidores para o Nagios.
+    
+    Criar arquivo de configuração: sudo nano /etc/nagios3/conf.d/loja_virtual.cfg
+    Declarar Hosts e Grupos: Insira as definições de hostgroup 
+    (ex: db-servers, web-servers) e host (IPs 192.168.56.10 e 192.168.56.12)
+
+    Recarregar o Nagios: 
+    $ sudo service nagios3 reload
+
+Passo 4. Configuração de Verificações Específicas
+    Adicione checagens detalhadas no arquivo loja_virtual.cfg para garantir que os serviços estão 
+    respondendo
+
+    MySQL (Servidor DB): Use o comando 
+        $ check_tcp!3306 ou $ check_mysql_database!loja!lojasecret!loja_schema 
+        para validar o banco
+
+    Tomcat (Servidor Web):
+        HTTP: Crie um comando 
+            $ check_tomcat_http apontando para a porta 8080 e URI /devopsnapratica/
+
+        HTTPS: Crie um comando 
+            $ check_tomcat_https usando o argumento --ssl=3 na porta 8443
+
+Passo 5. Configuração de Alertas por E-mail
+    Para que o time de operações seja notificado proativamente.
+
+    Editar Contatos: Abra o arquivo 
+    $ nano /etc/nagios3/conf.d/contacts_nagios2.cfg
+
+    Definir seu e-mail: Altere o endereço do contato root de root@localhost para o seu e-mail real.
+
+    Aplicar: $ sudo service nagios3 reload
+
+Passo 6. Teste Prático (Simulação de Falha)
+    Para validar se tudo funciona, simule um desastre:
+
+    Destruir o banco: No host, execute 
+    $ vagrant destroy db
+
+    Verificar Nagios: O painel deve mostrar o host 192.168.56.10 em status CRITICAL (vermelho)
+
+    Aguardar Alerta: Após 4 tentativas de checagem, você deverá receber um e-mail de notificação 
+    de erro

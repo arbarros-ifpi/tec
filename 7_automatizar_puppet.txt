@@ -1,0 +1,68 @@
+Com base no Capítulo 4: Infraestrutura como código, aqui está um guia prático para automatizar 
+a configuração dos servidores da loja virtual utilizando o Puppet.
+
+1. Preparação da Estrutura de Diretórios
+No mesmo diretório onde está o seu Vagrantfile, crie a estrutura necessária para armazenar os 
+manifestos do Puppet:
+
+Crie uma pasta chamada manifests.
+Dentro dela, você criará os arquivos db.pp (para o banco de dados) e web.pp (para o servidor web) conforme as instruções abaixo.
+
+2. Configuração do Vagrant para o Puppet
+Edite o seu arquivo Vagrantfile para incluir o provisionador do Puppet. Isso fará com que o Vagrant execute as configurações automaticamente ao subir as máquinas
+:
+config.vm.define :db do |db_config|
+  db_config.vm.network :private_network, :ip => "192.168.33.10"
+  db_config.vm.provision "puppet" do |puppet|
+    puppet.manifest_file = "db.pp"
+  end
+end
+
+config.vm.define :web do |web_config|
+  web_config.vm.network :private_network, :ip => "192.168.33.12"
+  web_config.vm.provision "puppet" do |puppet|
+    puppet.manifest_file = "web.pp"
+  end
+end
+
+--------------------------------------------------------------------------------
+3. Automatizando o Servidor de Banco de Dados (db.pp)
+No arquivo manifests/db.pp, declare o estado desejado para o MySQL de forma idempotente (que pode ser executada várias vezes sem causar erros se o estado já for o correto)
+:
+Atualizar Pacotes e Instalar MySQL: Use o recurso exec para o apt-get update e o recurso package para o servidor
+.
+Configurar Acesso Externo: Utilize o recurso file para criar o arquivo /etc/mysql/conf.d/allow_external.cnf. É recomendado usar um template ERB para o conteúdo do arquivo
+.
+Gerenciar o Serviço: Declare o recurso service para garantir que o MySQL esteja rodando e use o parâmetro notify no recurso de arquivo para reiniciar o serviço caso a configuração mude
+.
+Criar Schema e Usuário: Utilize recursos exec com os parâmetros unless ou onlyif para garantir que a criação do banco e do usuário loja só ocorra se eles ainda não existirem
+.
+
+--------------------------------------------------------------------------------
+4. Automatizando o Servidor Web (web.pp)
+No arquivo manifests/web.pp, configure o Tomcat e realize o deploy da aplicação
+:
+Instalação de Dependências: Declare a instalação dos pacotes mysql-client e tomcat7
+.
+Arquivos de Configuração (SSL e Memória): Use recursos file para enviar o certificado .keystore, o server.xml (configuração de porta 8443) e o arquivo de ambiente do Tomcat (para ajustar a memória para 512MB)
+.
+Dica: O autor sugere copiar esses arquivos do servidor antigo antes de destruí-lo para usá-los como fonte no Puppet
+.
+Configuração de DataSources via JNDI: Crie o arquivo context.xml usando um template que aponte para o IP do servidor de banco de dados (192.168.33.10)
+.
+Deploy da Aplicação: Use o recurso file para copiar o arquivo devopsnapratica.war para o diretório /var/lib/tomcat7/webapps/
+.
+
+--------------------------------------------------------------------------------
+5. Execução e Validação
+Com os arquivos configurados, você pode destruir as máquinas manuais antigas e subir as novas totalmente automatizadas:
+Destruir servidores antigos: vagrant destroy db web
+.
+Subir novos servidores com Puppet: vagrant up
+.
+O Vagrant mostrará as mensagens do Puppet (ex: ensure changed 'purged' to 'present')
+.
+Teste Final: Acesse a loja no seu navegador em http://192.168.33.12:8080/devopsnapratica/
+.
+Vantagem deste capítulo: Agora, se um servidor falhar, você consegue reconstruí-lo completamente configurado em questão de minutos, tratando a infraestrutura como código
+.
