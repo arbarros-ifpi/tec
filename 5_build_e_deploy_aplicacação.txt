@@ -1,24 +1,44 @@
-1 - Para realizar o build, é preciso instalar mais algumas ferramentas: 
+0 - Verifique se o java está instalado no servidor usando o comando
+    vagrant@web$ java -version
+    vagrant@web$ javac -version
+
+1 - Caso haja alguma versão diferente da versão 8, remova com os comandos
+
+    sudo apt remove openjdk-11-jdk openjdk-11-jre openjdk-11-jre-headless -y
+    sudo apt purge openjdk-11-* -y
+    sudo apt autoremove -y
+    sudo apt autoclean
+
+2 - Para realizar o build, é preciso instalar mais algumas ferramentas: 
     o Git (http://git-scm.com/) para controle de versão, 
     o Maven (http://maven.apache.org/) para executar o build em si e 
     o JDK (Java Development Kit) para conseguirmos compilar o código Java
 
-    vagrant@web$ sudo apt-get install git maven openjdk-11-jdk -y
+    vagrant@web$ sudo apt-get install git maven openjdk-8-jdk -y
 
-2 - Clonar a loja virtual no nosso servidor
+3 - 
+
+
+4 - Clonar a loja virtual no nosso servidor
 
     vagrant@web$ sudo git clone https://github.com/dtsato/loja-virtual-devops.git
 
 
-3 - Construindo a aplicação ("Buildando")
+5 - Construindo a aplicação ("Buildando")
 
     Entrar na pasta criada (loja-virtual-devops) e "buildar" tudo:
 
     vagrant@web$ cd loja-virtual-devops
     
-    vagrant@web$ export MAVEN_OPTS=-Xmx256m
+    vagrant@web$ export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=256m"
+
+6 - Atualize a versão dos plugins utilizados nos arquivos pom.xml
+
+    vagrant@web$ perl -0pi -e 's/(<artifactId>keytool-maven-plugin<\/artifactId>\s*)<version>1\.2<\/version>/${1}<version>1.7<\/version>/g; s/<goal>genkey<\/goal>/<goal>generateKeyPair<\/goal>/g' $(find . -name pom.xml)
     
-    vagrant@web$ mvn install
+7 - Efetue o build usando o comando a seguir
+    
+    vagrant@web$ mvn clean install
 
     A primeira execução do Maven vai demorar de 20 a 25 minutos
 
@@ -53,16 +73,17 @@
         tecas, arquivos estáticos e de configuração necessários para rodar uma
         aplicação web em um container Java como o Tomcat.
 
-4 - Ao término do build, o artefato que nos interessa para deploy é o arquivo 
+6 - Ao término do build, o artefato que nos interessa para deploy é o arquivo 
 devopsnapratica.war do módulo combined,que se encontra no diretório combined/target.
 
-5 - a última configuração necessária no Tomcat é a definição das fontes de dado, ou DataSource, que a aplicação
-irá acessar para conectar com o banco de dados. Isso ajuda no build automático possibilitando a alteração sem necessidade de um
+7 - a última configuração necessária no Tomcat é a definição das fontes de dado, 
+ou DataSource, que a aplicação irá acessar para conectar com o banco de dados. 
+Isso ajuda no build automático possibilitando a alteração sem necessidade de um
 novo build.
 
     A loja virtual precisa de três fontes de dados no JNDI chamadas
-    jdbc/web, jdbc/secure e jdbc/storage. No nosso caso, usare-
-    mos o mesmo banco de dados para os três recursos, definidos no arquivo
+    jdbc/web, jdbc/secure e jdbc/storage. No nosso caso, usaremos o mesmo banco de dados 
+    para os três recursos, definidos no arquivo
     context.xml:
 
     vagrant@web$ sudo nano /var/lib/tomcat9/conf/context.xml
@@ -77,41 +98,43 @@ novo build.
             type="javax.sql.DataSource" maxActive="100" maxIdle="30"
             maxWait="10000" username="loja" password="lojasecret"
             driverClassName="com.mysql.jdbc.Driver"
-            url="jdbc:mysql://192.168.33.10:3306/loja_schema"/>
+            url="jdbc:mysql://192.168.56.10:3306/loja_schema"/>
             
         <Resource name="jdbc/secure" auth="Container"
             type="javax.sql.DataSource" maxActive="100" maxIdle="30"
             maxWait="10000" username="loja" password="lojasecret"
             driverClassName="com.mysql.jdbc.Driver"
-            url="jdbc:mysql://192.168.33.10:3306/loja_schema"/>
+            url="jdbc:mysql://192.168.56.10:3306/loja_schema"/>
             
         <Resource name="jdbc/storage" auth="Container"
             type="javax.sql.DataSource" maxActive="100" maxIdle="30"
             maxWait="10000" username="loja" password="lojasecret"
             driverClassName="com.mysql.jdbc.Driver"
-            url="jdbc:mysql://192.168.33.10:3306/loja_schema"/>
+            url="jdbc:mysql://192.168.56.10:3306/loja_schema"/>
     </Context>
 
-6 - Para fazer o deploy da loja virtual em si, simplesmente precisamos copiar o artefato war 
-para o lugar certo e o Tomcat fará o necessário para colocar a loja virtual no ar:
+8 - Para fazer o deploy da loja virtual em si, simplesmente precisamos copiar o artefato 
+war para o lugar certo e o Tomcat fará o necessário para colocar a loja virtual no ar:
     
     vagrant@web$ cd ~/loja-virtual-devops
 
-    vagrant@web$ sudo cp combined/target/devopsnapratica.war \ /var/lib/tomcat7/webapps
+    vagrant@web$ sudo cp combined/target/devopsnapratica.war  /var/lib/tomcat9/webapps
 
     Você pode acompanhar o deploy em tempo real usando o comando
 
-    vagrant@web$ tail -f /var/lib/tomcat7/logs/catalina.out
+    vagrant@web$ tail -f /var/lib/tomcat9/logs/catalina.out
 
     O deploy termina assim que você perceber que as atividades no log pararam. 
     Para terminar o comando tail você pode usar Ctrl+C.
 
     Para testar que tudo está funcionando: 
         abra uma nova janela no navegador e digite a URL 
-        http://192.168.33.12:8080/devopsnapratica/ . Parabéns, a loja virtual está em produção!
+        http://192.168.56.12:8080/devopsnapratica/ . 
+    
+    Parabéns, a loja virtual está em produção!
 
     Você também pode acessar a página de administração que se encontra na URL 
-    http://192.168.33.12:8080/devopsnapratica/admin/ (a barra no final da URL é importante). 
+    http://192.168.56.12:8080/devopsnapratica/admin/ (a barra no final da URL é importante). 
     
     Entrando com o usuário “admin” e senha “admin” você pode navegar pelas páginas de 
     administração e gerenciar o catálogo de produtos, categorias, o conteúdo das páginas da 

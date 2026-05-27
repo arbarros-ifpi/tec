@@ -12,14 +12,14 @@ Dentro dela, você criará os arquivos db.pp (para o banco de dados) e web.pp (p
 Edite o seu arquivo Vagrantfile para incluir o provisionador do Puppet. Isso fará com que o Vagrant execute as configurações automaticamente ao subir as máquinas
 :
 config.vm.define :db do |db_config|
-  db_config.vm.network :private_network, :ip => "192.168.33.10"
+  db_config.vm.network :private_network, :ip => "192.168.56.10"
   db_config.vm.provision "puppet" do |puppet|
     puppet.manifest_file = "db.pp"
   end
 end
 
 config.vm.define :web do |web_config|
-  web_config.vm.network :private_network, :ip => "192.168.33.12"
+  web_config.vm.network :private_network, :ip => "192.168.56.12"
   web_config.vm.provision "puppet" do |puppet|
     puppet.manifest_file = "web.pp"
   end
@@ -62,7 +62,7 @@ Subir novos servidores com Puppet: vagrant up
 .
 O Vagrant mostrará as mensagens do Puppet (ex: ensure changed 'purged' to 'present')
 .
-Teste Final: Acesse a loja no seu navegador em http://192.168.33.12:8080/devopsnapratica/
+Teste Final: Acesse a loja no seu navegador em http://192.168.56.12:8080/devopsnapratica/
 .
 Vantagem deste capítulo: Agora, se um servidor falhar, você consegue reconstruí-lo completamente configurado em questão de minutos, tratando a infraestrutura como código
 .
