@@ -1,6 +1,6 @@
 Instação VirtualBox e Vagrant
 
-0 - Execute o script de limpeza (arquivo script_limpeza.sh).
+Passo 1 - Execute o script de limpeza (arquivo script_limpeza.sh).
     Baixe o arquivo script_limpeza.sh
     Abrir o terminal (Ctrl+Alt+T), execute os seguintes comandos:
         $ cd ./Downloads
@@ -8,12 +8,12 @@ Instação VirtualBox e Vagrant
         $ ./script_limpeza.sh
     Aguarde a finalização e passe para o próximo passo
 
-1 - Instalação da VirtualBox
+Passo 2 - Instalação da VirtualBox
     Atualize os repositórios e instale o VirtualBox (provedor de virtualização):
         $ sudo apt-get update && sudo apt-get upgrade -y
         $ sudo apt-get install virtualbox virtualbox-dkms libelf-dev -y
         
-2 - Instalação da Vagrant
+Passo 3 - Instalação da Vagrant
     Adicione o repositório oficial do HashiCorp para garantir a versão mais recente:
         $ curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
         $ echo "deb [arch=amd64 signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
@@ -31,4 +31,4 @@ Instação VirtualBox e Vagrant
         virtualbox --version (vai abrir o virtual box). Antes de continuar, feche o virtual box.
         vagrant --version
 
-3 - Vá para o arquivo tutorial_configuração.txt
+Passo 4 - Vá para o arquivo tutorial_configuração.txt

@@ -1,0 +1,230 @@
+    $ vagrant destroy web
+    $ vagrant status
+    $ vagrant up
+    
+Instalação e Configuração do Servidor Web
+=================================================================================================
+1 - BUILD
+=================================================================================================
+
+Passo 1: Acesso e Instalação dos Pacotes. 
+Conecte na máquina web e atualize a lista de pacotes. 
+    $ vagrant ssh web
+    $ sudo apt update
+
+Passo 2: Instalação do Java versão 8. 
+    $ sudo apt install openjdk-8-jdk -y
+    $ sudo update-alternatives --config java
+    $ sudo update-alternatives --config javac
+    $ mvn -version 
+        (deve indicar Java 8)
+
+Passo 3: Clonando o projeto disponível no github.
+    $ cd /home/vagrant
+    $ sudo rm -rf loja-virtual-devops
+    $ git clone https://github.com/dtsato/loja-virtual-devops.git
+    $ cd loja-virtual-devops
+
+Passo 4: Permissões nos arquivos clonados
+    $ sudo chown -R vagrant:vagrant /home/vagrant/loja-virtual-devops
+    $ cd ~/loja-virtual-devops
+    $ sudo find . -name target -type d -exec rm -rf {} +
+    $ sudo chown -R vagrant:vagrant /home/vagrant/loja-virtual-devops
+
+Passo 5: Corrigir a versão do plugin keytool-maven-plugin
+    O projeto original usa keytool-maven-plugin 1.2 com goal genkey. 
+    Em ambiente atual isso falha. Atualizamos para 1.7 e trocamos o goal para generateKeyPair.
+    $ cd ~/loja-virtual-devops
+    $ perl -0pi -e 's/(<artifactId>keytool-maven-plugin<\/artifactId>\s*)<version>1\.2<\/version>/${1}<version>1.7<\/version>/g; s/<goal>genkey<\/goal>/<goal>generateKeyPair<\/goal>/g' $(find . -name pom.xml)
+
+Conferência:
+    $ grep -R -n "keytool-maven-plugin\|genkey\|generateKeyPair" . --exclude-dir=.git
+    Observação: <id>genkey</id> pode permanecer. O que precisava mudar era o <goal>.
+
+6. Corrigir o download do Jetty no Cargo
+    O build quebrou no módulo site com erro Not in GZIP format, porque o cargo-maven2-plugin tentava baixar o Jetty por uma URL antiga via HTTP. A correção foi forçar a URL HTTPS no site/pom.xml.
+nano site/pom.xml
+    Dentro da configuração do cargo-maven2-plugin, o bloco do container deve ficar assim:
+
+    <container>
+        <containerId>jetty8x</containerId>
+        <type>installed</type>
+        <zipUrlInstaller>
+            <url>https://repo.maven.apache.org/maven2/org/eclipse/jetty/jetty-distribution/8.1.14.v20131031/jetty-distribution-8.1.14.v20131031.tar.gz</url>
+        </zipUrlInstaller>
+    </container>
+Depois limpe o download corrompido:
+
+    $ rm -rf /tmp/cargo
+
+
+Passo 7: 7. Rodar o build
+cd ~/loja-virtual-devops
+export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=256m"
+mvn clean install
+Se o build já tiver avançado e for necessário retomar a partir de um módulo:
+mvn install -rf :site
+# ou
+mvn install -rf :combined
+Resultado esperado no final:
+loja-virtual-devops .... SUCCESS
+core ................... SUCCESS
+admin .................. SUCCESS
+site ................... SUCCESS
+combined ............... SUCCESS
+BUILD SUCCESS
+O artefato final é:
+~/loja-virtual-devops/combined/target/devopsnapratica.war
+
+=================================================================================================
+2 - DEPLOY
+=================================================================================================
+Passo 1: Instalar Tomcat 7 manualmente
+
+Como o Tomcat 7 não estava disponível via apt, usamos instalação manual a partir do archive da 
+Apache.
+    $ sudo systemctl stop tomcat9
+    $ sudo systemctl disable tomcat9
+    $ cd /opt
+    $ sudo wget https://archive.apache.org/dist/tomcat/tomcat-7/v7.0.109/bin/apache-tomcat-7.0.109.tar.gz
+    $ sudo tar -xzf apache-tomcat-7.0.109.tar.gz
+    $ sudo mv apache-tomcat-7.0.109 tomcat7
+    $ sudo chown -R vagrant:vagrant /opt/tomcat7
+
+Passo 2: Configurar Java 8 no Tomcat 7
+    $ nano /opt/tomcat7/bin/setenv.sh
+Conteúdo do arquivo:
+    $ export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+    $ export CATALINA_OPTS="-Xms256m -Xmx512m -XX:MaxPermSize=256m"
+    $ chmod +x /opt/tomcat7/bin/setenv.sh
+    $ /opt/tomcat7/bin/version.sh
+
+A saída deve indicar Apache Tomcat/7.0.109 e JVM Version 1.8.x.
+
+Passo 3. Iniciar e testar o Tomcat 7
+    $ /opt/tomcat7/bin/startup.sh
+    $ ps aux | grep tomcat
+    $ sudo ss -ltnp | egrep '8080|8443'
+    $ curl -I http://localhost:8080/
+Resultado esperado: HTTP/1.1 200 OK e porta 8080 em LISTEN.
+
+Passo 4. Configurar DataSources JNDI
+    $ nano /opt/tomcat7/conf/context.xml
+
+Dentro da tag <Context>, inserir os três recursos:
+    <Resource name="jdbc/web" auth="Container"
+        type="javax.sql.DataSource"
+        maxActive="100"
+        maxIdle="30"
+        maxWait="10000"
+        username="loja"
+        password="lojasecret"
+        driverClassName="com.mysql.jdbc.Driver"
+        url="jdbc:mysql://192.168.56.10:3306/loja_schema"/>
+
+    <Resource name="jdbc/secure" auth="Container"
+        type="javax.sql.DataSource"
+        maxActive="100"
+        maxIdle="30"
+        maxWait="10000"
+        username="loja"
+        password="lojasecret"
+        driverClassName="com.mysql.jdbc.Driver"
+        url="jdbc:mysql://192.168.56.10:3306/loja_schema"/>
+
+    <Resource name="jdbc/storage" auth="Container"
+        type="javax.sql.DataSource"
+        maxActive="100"
+        maxIdle="30"
+        maxWait="10000"
+        username="loja"
+        password="lojasecret"
+        driverClassName="com.mysql.jdbc.Driver"
+        url="jdbc:mysql://192.168.56.10:3306/loja_schema"/>
+Conferência:
+
+    $ grep -n "jdbc/web\|jdbc/secure\|jdbc/storage\|driverClassName\|url=" /opt/tomcat7/conf/context.xml
+
+Passo 5. Instalar/copiar driver JDBC
+
+Foi identificado que não havia driver MySQL/MariaDB nem em /usr/share/java nem em 
+/opt/tomcat7/lib.
+    $ ls /opt/tomcat7/lib | grep -i "mysql\|maria"
+    $ ls /usr/share/java | grep -i "mysql\|maria"
+
+Se o pacote estiver disponível, instalar o driver MariaDB:
+    $ sudo apt update
+    $ sudo apt install libmariadb-java -y
+    $ cp /usr/share/java/mariadb-java-client*.jar /opt/tomcat7/lib/
+
+Se usar MariaDB Connector, trocar o driverClassName:
+    $ perl -0pi -e 's/com\.mysql\.jdbc\.Driver/org.mariadb.jdbc.Driver/g' /opt/tomcat7/conf/context.xml
+    $ grep -n "driverClassName" /opt/tomcat7/conf/context.xml
+
+
+Passo 6. Testar conexão da VM web com o banco
+    $ ping -c 4 192.168.56.10
+    $ nc -vz 192.168.56.10 3306
+
+Resultado encontrado: o ping funcionou, mas a porta 3306 retornou Connection refused. 
+Isso indica que a VM web alcança a VM do banco, mas o MySQL/MariaDB não está aceitando conexão 
+TCP em 192.168.56.10:3306.
+
+Passo 7. Ajustar o banco na VM db
+Na VM do banco, verificar serviço e porta:
+    $ sudo systemctl status mysql
+    $ sudo systemctl status mariadb
+    $ sudo ss -ltnp | grep 3306
+
+Se o serviço estiver parado:
+    $ sudo systemctl start mysql
+    # ou
+    $ sudo systemctl start mariadb
+Se o banco estiver escutando apenas em 127.0.0.1, alterar bind-address para 0.0.0.0 em um dos arquivos:
+    $ sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
+    # ou
+    $ sudo nano /etc/mysql/mariadb.conf.d/50-server.cnf
+Ajuste esperado:
+    bind-address = 0.0.0.0
+Depois reiniciar e conferir:
+    $ sudo systemctl restart mysql
+    # ou
+    $ sudo systemctl restart mariadb
+    $ sudo ss -ltnp | grep 3306
+
+Passo 8. Liberar usuário do banco para acesso remoto. Na VM do banco, entrar no MySQL/MariaDB:
+    $ sudo mysql
+    # ou
+    $ mysql -u root -p
+Executar:
+    CREATE USER IF NOT EXISTS 'loja'@'%' IDENTIFIED BY 'lojasecret';
+    GRANT ALL PRIVILEGES ON loja_schema.* TO 'loja'@'%';
+    FLUSH PRIVILEGES;
+    SHOW DATABASES;
+    EXIT;
+
+Passo 9. Deploy no Tomcat 7
+Depois que o banco estiver acessível, fazer deploy limpo:
+    $ /opt/tomcat7/bin/shutdown.sh
+
+    $ rm -rf /opt/tomcat7/webapps/devopsnapratica
+    $ rm -f /opt/tomcat7/webapps/devopsnapratica.war
+    $ rm -rf /opt/tomcat7/work/Catalina/localhost/devopsnapratica
+
+    $ cp ~/loja-virtual-devops/combined/target/devopsnapratica.war /opt/tomcat7/webapps/devopsnapratica.war
+
+    $ /opt/tomcat7/bin/startup.sh
+
+Acompanhar log:
+    $ tail -f /opt/tomcat7/logs/catalina.out
+Testar:
+    $ curl -I http://localhost:8080/devopsnapratica/
+URLs no navegador:
+    $ http://192.168.56.12:8080/devopsnapratica/
+    $ http://192.168.56.12:8080/devopsnapratica/admin/
+
+
+Credenciais:
+
+Usuário: admin
+Senha: admin

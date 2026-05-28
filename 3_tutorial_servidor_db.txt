@@ -1,6 +1,6 @@
 Instalação e Configuração do MySQL Server (Acesso Externo)
 
-Passo 1: Instalação do Servidor MySQLO Ubuntu 18.04 instalará a versão 5.7. 
+Passo 1: Instalação do Servidor MySQL. O Ubuntu 18.04 instalará a versão 5.7. 
 Ela não solicita senha na tela de instalação por segurança, pois adota autenticação direta 
 via sistema operacional.
     $ sudo apt update
@@ -55,3 +55,5 @@ O terminal deve exibir uma tabela confirmando o banco loja_schema e o usuário l
 Para sair da máquina virtual db e voltar para o seu computador, digite logout ou pressione 
 
 Ctrl + D.
+
+Passo 9 - Vá para o arquivo 4_tutorial_servidor_web.txt

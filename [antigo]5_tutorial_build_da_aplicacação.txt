@@ -16,8 +16,8 @@
 
     vagrant@web$ sudo apt-get install git maven openjdk-8-jdk -y
 
-3 - 
-
+3 - Remover versão 9 do tomcat e instalar a versão 7 (manualmente)
+    
 
 4 - Clonar a loja virtual no nosso servidor
 
