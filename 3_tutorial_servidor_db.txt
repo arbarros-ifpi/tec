@@ -28,7 +28,8 @@ definir a senha do root como secret:
 
 Passo 4: Criação do Banco de Dados (loja_schema)
 Agora que o usuário root tem uma credencial, use o utilitário do sistema para criar a 
-base de dados do projeto:bashmysqladmin -u root -p create loja_schema
+base de dados do projeto:
+    $ mysqladmin -u root -p create loja_schema
     Senha: secret
 Para validar se o banco foi criado, liste as bases existentes:
     $ mysql -u root -p -e "SHOW DATABASES;"
