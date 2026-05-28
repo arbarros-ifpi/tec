@@ -94,8 +94,8 @@ Apache.
 Passo 2: Configurar Java 8 no Tomcat 7
     $ nano /opt/tomcat7/bin/setenv.sh
 Conteúdo do arquivo:
-    $ export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-    $ export CATALINA_OPTS="-Xms256m -Xmx512m -XX:MaxPermSize=256m"
+    export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+    export CATALINA_OPTS="-Xms256m -Xmx512m -XX:MaxPermSize=256m"
     $ chmod +x /opt/tomcat7/bin/setenv.sh
     $ /opt/tomcat7/bin/version.sh
 
