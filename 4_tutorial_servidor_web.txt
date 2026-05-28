@@ -1,12 +1,12 @@
+Recriar o servidor Web
     $ vagrant destroy web
     $ vagrant status
     $ vagrant up
-    
+
 Instalação e Configuração do Servidor Web
 =================================================================================================
 1 - BUILD
 =================================================================================================
-
 Passo 1: Acesso e Instalação dos Pacotes. 
 Conecte na máquina web e atualize a lista de pacotes. 
     $ vagrant ssh web
