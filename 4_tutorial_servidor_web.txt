@@ -20,21 +20,16 @@ Passo 2: Instalação do Java versão 8.
         (deve indicar Java 8)
 
 Passo 3: Clonando o projeto disponível no github.
-    $ cd /home/vagrant
-    $ sudo rm -rf loja-virtual-devops
     $ git clone https://github.com/dtsato/loja-virtual-devops.git
     $ cd loja-virtual-devops
 
 Passo 4: Permissões nos arquivos clonados
-    $ sudo chown -R vagrant:vagrant /home/vagrant/loja-virtual-devops
-    $ cd ~/loja-virtual-devops
     $ sudo find . -name target -type d -exec rm -rf {} +
     $ sudo chown -R vagrant:vagrant /home/vagrant/loja-virtual-devops
 
 Passo 5: Corrigir a versão do plugin keytool-maven-plugin
     O projeto original usa keytool-maven-plugin 1.2 com goal genkey. 
     Em ambiente atual isso falha. Atualizamos para 1.7 e trocamos o goal para generateKeyPair.
-    $ cd ~/loja-virtual-devops
     $ perl -0pi -e 's/(<artifactId>keytool-maven-plugin<\/artifactId>\s*)<version>1\.2<\/version>/${1}<version>1.7<\/version>/g; s/<goal>genkey<\/goal>/<goal>generateKeyPair<\/goal>/g' $(find . -name pom.xml)
 
 Conferência:
@@ -43,23 +38,23 @@ Conferência:
 
 6. Corrigir o download do Jetty no Cargo
     O build quebrou no módulo site com erro Not in GZIP format, porque o cargo-maven2-plugin tentava baixar o Jetty por uma URL antiga via HTTP. A correção foi forçar a URL HTTPS no site/pom.xml.
-$ nano site/pom.xml
+    $ nano site/pom.xml
     Dentro da configuração do cargo-maven2-plugin, o bloco do container deve ficar assim:
 
-    <container>
+    
         <containerId>jetty8x</containerId>
         <type>installed</type>
         <zipUrlInstaller>
             <url>https://repo.maven.apache.org/maven2/org/eclipse/jetty/jetty-distribution/8.1.14.v20131031/jetty-distribution-8.1.14.v20131031.tar.gz</url>
         </zipUrlInstaller>
-    </container>
+    
 Depois limpe o download corrompido:
 
     $ rm -rf /tmp/cargo
 
 
 Passo 7: 7. Rodar o build
-cd ~/loja-virtual-devops
+
 export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=256m"
 mvn clean install
 Se o build já tiver avançado e for necessário retomar a partir de um módulo:
@@ -170,7 +165,7 @@ Resultado encontrado: o ping funcionou, mas a porta 3306 retornou Connection ref
 Isso indica que a VM web alcança a VM do banco, mas o MySQL/MariaDB não está aceitando conexão 
 TCP em 192.168.56.10:3306.
 
-Passo 7. Ajustar o banco na VM db
+Passo 7. Ajustar o banco na VM db [servidor db]
 Na VM do banco, verificar serviço e porta:
     $ sudo systemctl status mysql
     $ sudo systemctl status mariadb
@@ -203,7 +198,7 @@ Executar:
     SHOW DATABASES;
     EXIT;
 
-Passo 9. Deploy no Tomcat 7
+Passo 9. Deploy no Tomcat 7 [servidor web]
 Depois que o banco estiver acessível, fazer deploy limpo:
     $ /opt/tomcat7/bin/shutdown.sh
 
