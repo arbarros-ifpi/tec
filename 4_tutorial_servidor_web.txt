@@ -48,19 +48,15 @@ Conferência:
             <url>https://repo.maven.apache.org/maven2/org/eclipse/jetty/jetty-distribution/8.1.14.v20131031/jetty-distribution-8.1.14.v20131031.tar.gz</url>
         </zipUrlInstaller>
     
-Depois limpe o download corrompido:
+    $ mkdir -p /home/vagrant/ .m2
+    $ tar -xzf /vagrant/maven-repository-loja-devops.tar.gz -C /home/vagrant/.m2
+    $ sudo chown -R vagrant:vagrant /home/vagrant/.m2
 
-    $ rm -rf /tmp/cargo
+Passo 7: Rodar o build
 
+export MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=512m"
+mvn clean install -DskipTests -o
 
-Passo 7: 7. Rodar o build
-
-export MAVEN_OPTS="-Xmx512m -XX:MaxPermSize=256m"
-mvn clean install
-Se o build já tiver avançado e for necessário retomar a partir de um módulo:
-mvn install -rf :site
-# ou
-mvn install -rf :combined
 Resultado esperado no final:
 loja-virtual-devops .... SUCCESS
 core ................... SUCCESS
@@ -68,6 +64,7 @@ admin .................. SUCCESS
 site ................... SUCCESS
 combined ............... SUCCESS
 BUILD SUCCESS
+
 O artefato final é:
 ~/loja-virtual-devops/combined/target/devopsnapratica.war
 
@@ -142,7 +139,8 @@ Conferência:
 
 Passo 5. Instalar/copiar driver JDBC
 
-Foi identificado que não havia driver MySQL/MariaDB nem em /usr/share/java nem em 
+Foi identificado que não havia driver MySQL/MariaDB nem em 
+/usr/share/java nem em 
 /opt/tomcat7/lib.
     $ ls /opt/tomcat7/lib | grep -i "mysql\|maria"
     $ ls /usr/share/java | grep -i "mysql\|maria"
@@ -187,7 +185,8 @@ Depois reiniciar e conferir:
     $ sudo systemctl restart mariadb
     $ sudo ss -ltnp | grep 3306
 
-Passo 8. Liberar usuário do banco para acesso remoto. Na VM do banco, entrar no MySQL/MariaDB:
+Passo 8. Liberar usuário do banco para acesso remoto. 
+Na VM do banco, entrar no MySQL/MariaDB:
     $ sudo mysql
     # ou
     $ mysql -u root -p
